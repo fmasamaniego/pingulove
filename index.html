@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Para negrina <3 </title>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Comic Sans MS', cursive;
+      background-color: #d8f3ff;
+    }
+
+    .screen {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      background-color: #d8f3ff;
+      transition: opacity 1s ease;
+    }
+
+    .hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #main-screen {
+      z-index: 1;
+    }
+
+    img {
+      width: 250px;
+      z-index: 2;
+    }
+
+    .phrase {
+      margin-top: 20px;
+      font-size: 24px;
+      color: #333;
+      z-index: 2;
+      text-align: center;
+    }
+
+    canvas {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
+    }
+
+    .heart-message {
+      position: absolute;
+      color: #e24e6b;
+      font-size: 28px;
+      font-weight: bold;
+      z-index: 2;
+      text-shadow: 1px 1px 2px white;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Pantalla 1: corazón de partículas -->
+<div class="screen" id="start-screen" onclick="showMain()">
+  <div class="heart-message">Hace click gordita ❤️</div>
+</div>
+
+<!-- Pantalla 2: pingüinos + nieve -->
+<div class="screen hidden" id="main-screen">
+  <canvas id="snow"></canvas>
+  <img src="assets/pinguinos_abrazo.png" alt="Pingüinos abrazados">
+  <div class="phrase">Feliz aniversario ❤️</div>
+  <div class="phrase">Teamoteamoteamoteamoteamoteamo</div>
+  <div class="phrase">Abrazo pingüino 🐧❤️</div>
+</div>
+
+<script>
+  // Mostrar pantalla principal
+  function showMain() {
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('main-screen').classList.remove('hidden');
+  }
+
+  // ----------- Partículas en forma de corazón (p5.js) -----------
+  let particles = [];
+
+  function setup() {
+    let cnv = createCanvas(windowWidth, windowHeight);
+    cnv.parent('start-screen');
+    noStroke();
+
+    // Centrar el mensaje sobre el canvas
+    const msg = document.querySelector('.heart-message');
+    msg.style.left = (windowWidth / 2 - msg.offsetWidth / 2) + 'px';
+    msg.style.top = (windowHeight / 2 - msg.offsetHeight / 2) + 'px';
+
+    for (let i = 0; i < 400; i++) {
+      let angle = random(TWO_PI);
+      let r = 16 * pow(sin(angle), 3);
+      let x = r * 20 + random(-5, 5);
+      let y = -(13 * cos(angle) - 5 * cos(2 * angle) - 2 * cos(3 * angle) - cos(4 * angle)) * 20 + random(-5, 5);
+      particles.push(new Particle(width / 2 + x, height / 2 + y));
+    }
+  }
+
+  function draw() {
+    clear();
+    for (let p of particles) {
+      p.update();
+      p.show();
+    }
+  }
+
+  class Particle {
+    constructor(x, y) {
+      this.origin = createVector(x, y);
+      this.pos = this.origin.copy();
+      this.vel = createVector(0, 0);
+      this.color = color(255, random(120, 160), random(180, 220), 200);
+    }
+
+    update() {
+      let mouse = createVector(mouseX, mouseY);
+      let d = dist(this.pos.x, this.pos.y, mouse.x, mouse.y);
+      if (d < 100) {
+        let force = p5.Vector.sub(this.pos, mouse);
+        force.setMag((100 - d) * 0.2);
+        this.vel.add(force);
+      }
+
+      let towardsOrigin = p5.Vector.sub(this.origin, this.pos);
+      towardsOrigin.mult(0.02);
+      this.vel.add(towardsOrigin);
+
+      this.vel.mult(0.9); // fricción
+      this.pos.add(this.vel);
+    }
+
+    show() {
+      fill(this.color);
+      ellipse(this.pos.x, this.pos.y, 5);
+    }
+  }
+
+  function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+  }
+
+  // ----------- Nieve para la segunda pantalla -----------
+  const snowCanvas = document.getElementById('snow');
+  const snowCtx = snowCanvas.getContext('2d');
+  let width, height;
+  let snowflakes = [];
+
+  function resizeSnow() {
+    width = snowCanvas.width = window.innerWidth;
+    height = snowCanvas.height = window.innerHeight;
+  }
+
+  function createSnowflake() {
+    return {
+      x: Math.random() * width,
+      y: Math.random() * height,
+      radius: Math.random() * 3 + 1,
+      speed: Math.random() * 1.5 + 0.5
+    };
+  }
+
+  function drawSnowflakes() {
+    snowCtx.clearRect(0, 0, width, height);
+    snowCtx.fillStyle = "white";
+    snowCtx.beginPath();
+    snowflakes.forEach(flake => {
+      snowCtx.moveTo(flake.x, flake.y);
+      snowCtx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
+    });
+    snowCtx.fill();
+    moveSnowflakes();
+  }
+
+  function moveSnowflakes() {
+    snowflakes.forEach(flake => {
+      flake.y += flake.speed;
+      if (flake.y > height) {
+        flake.y = 0;
+        flake.x = Math.random() * width;
+      }
+    });
+  }
+
+  function updateSnow() {
+    drawSnowflakes();
+    requestAnimationFrame(updateSnow);
+  }
+
+  window.addEventListener('resize', () => {
+    resizeSnow();
+    // Recentrar mensaje también
+    const msg = document.querySelector('.heart-message');
+    msg.style.left = (window.innerWidth / 2 - msg.offsetWidth / 2) + 'px';
+    msg.style.top = (window.innerHeight / 2 - msg.offsetHeight / 2) + 'px';
+  });
+
+  resizeSnow();
+  snowflakes = Array.from({ length: 100 }, createSnowflake);
+  updateSnow();
+</script>
+
+</body>
+</html>
